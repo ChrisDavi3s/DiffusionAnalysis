@@ -1,3 +1,4 @@
 from .loaders import XYZStructureLoader, DatDirectoryStructureLoader
 from .trajectory import DisplacementTrajectory
-from .analysis import SimpleMSDAnalysis
+from .analysis import SimpleMSDAnalysis, VanHoveAnalysis
+from .trajectory import TimeUnit

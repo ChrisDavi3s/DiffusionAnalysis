@@ -4,13 +4,15 @@ from ase import Atoms
 from ..loaders import StructureLoader
 from tqdm import tqdm
 import itertools
-
+from enum import Enum
+from .time_unit import TimeUnit
+    
 class DisplacementTrajectory:
     '''
     Class to store and calculate the displacement trajectory of atoms in a MD simulation.
 
     Attributes:
-    atoms_trajectory: StructureLoader
+    atoms_trajectory_loader: StructureLoader
         A StructureLoader object that provides an iterable of Atoms objects representing the
         trajectory of atoms in the MD simulation.
     displacement_trajectory: np.ndarray
@@ -24,7 +26,7 @@ class DisplacementTrajectory:
         Array of shape (n_atoms,) that contains the atomic numbers of the atoms in the MD simulation.
     host_atom_indices: np.ndarray
         Array of shape (n_host_atoms,) that contains the indices of the host atoms in the MD simulation.
-    framework_atom_indices: np.ndar ray
+    framework_atom_indices: np.ndarray
         Array of shape (n_framework_atoms,) that contains the indices of the framework atoms in the MD simulation.
     use_cartesian: bool
         If True, the positions of the atoms will be stored in Cartesian coordinates.
@@ -32,14 +34,21 @@ class DisplacementTrajectory:
     track_lattice_vectors: bool
         If True, the lattice vectors will be tracked and stored for each frame.
         If False, only the unique lattice vectors will be stored.
+    max_memory: float
+        The maximum memory (in MB) allowed for storing the displacement trajectory and lattice vectors.
+    timestep: float
+        The timestep of the MD simulation.
+    time_unit: str
+        The unit of time for the timestep. Accepted values are 'fs', 'ps', 'ns', 'us', 'ms', 's'.
     '''
-
     def __init__(self, 
-                 atoms_trajectory_loader: StructureLoader,
-                 lattice_vectors: Optional[np.ndarray] = None,
-                 use_cartesian: bool = True,
-                 track_lattice_vectors: bool = False,
-                 max_memory : float = 1024 ) -> None:
+                atoms_trajectory_loader: StructureLoader,
+                lattice_vectors: Optional[np.ndarray] = None,
+                use_cartesian: bool = True,
+                track_lattice_vectors: bool = False,
+                max_memory : float = 1024,
+                timestep: float = 1,
+                time_unit: str | TimeUnit = 'ps') -> None:
         
         self.atoms_trajectory_loader: StructureLoader = atoms_trajectory_loader
         self.displacement_trajectory: np.ndarray = None
@@ -47,6 +56,9 @@ class DisplacementTrajectory:
         self.use_cartesian = use_cartesian
         self.atomic_numbers : np.ndarray = None
         self.max_memory = max_memory
+        self.timestep = timestep
+        self.time_unit = TimeUnit(time_unit) if isinstance(time_unit, str) else time_unit
+
         
         self.host_atom_indices = None
         self.framework_atom_indeces = None
@@ -68,9 +80,12 @@ class DisplacementTrajectory:
         '''
         Check if the memory usage of the displacement trajectory and lattice vectors exceeds the specified limit.
         '''
+        if self.max_memory is None:
+            return
+        
         num_atoms = self._num_atoms
         num_frames = self._num_frames
-        safety_factor: float = 1.00 # Safety factor to account for additional memory usage
+        safety_factor: float = 1.1 # Safety factor to account for additional memory usage
         
         displacement_memory = num_atoms * num_frames * 3 * 8  # Assuming 64-bit float for displacements
         
@@ -81,7 +96,7 @@ class DisplacementTrajectory:
         
         total_memory = ((displacement_memory + lattice_memory) / 1024**2) * safety_factor  # Convert to MB
         
-        if self.max_memory is not None and total_memory > self.max_memory:
+        if total_memory > self.max_memory:
             raise MemoryError(f'Estimated memory usage ({total_memory:.2f} MB) exceeds the specified limit ({self.max_memory:.2f} MB).')
         else:
             print(f'Estimated memory usage: {total_memory:.2f} MB')
@@ -238,3 +253,40 @@ class DisplacementTrajectory:
         start, stop, step = structures_to_load.indices(self.atoms_trajectory_loader.get_total_steps())
         total_structures = len(range(start, stop, step))
         return total_structures
+    
+    def get_relevant_displacements(self, atom_indices: Optional[np.ndarray] = None, framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False) -> np.ndarray:
+        """
+        Get the displacements view for the selected atoms and optionally correct for framework drift.
+
+        Args:
+            atom_indices (np.ndarray, optional): The indices of the atoms to include. Defaults to None.
+            framework_indices (np.ndarray, optional): The indices of the framework atoms. Defaults to None.
+            correct_drift (bool, optional): Whether to correct for framework drift. Defaults to False.
+
+        Returns:
+            np.ndarray: The displacements view for the selected atoms.
+
+        Raises:
+            ValueError: If framework indices are not provided when drift correction is enabled.
+            ValueError: If atom indices and framework indices overlap.
+        """
+        if atom_indices is None:
+            atom_indices = self.host_atom_indices
+
+        if framework_indices is None:
+            framework_indices = self.framework_atom_indices
+
+        if correct_drift and len(framework_indices) == 0:
+            raise ValueError("Framework indices must be provided for drift correction.")
+
+        if len(np.intersect1d(atom_indices, framework_indices)) > 0:
+            raise ValueError("Atom indices and framework indices cannot overlap.")
+
+        if correct_drift:
+            framework_displacements = self.displacement_trajectory[framework_indices]
+            framework_center_of_mass = np.mean(framework_displacements, axis=0, keepdims=True)
+            displacements = self.displacement_trajectory[atom_indices] - framework_center_of_mass
+        else:
+            displacements = self.displacement_trajectory[atom_indices]
+
+        return displacements
