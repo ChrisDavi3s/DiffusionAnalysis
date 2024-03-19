@@ -1,9 +1,8 @@
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-import numpy
 
 setup(
-    name='Diffusionanalysis',
+    name='DiffusionAnalysis',
     version='0.1',
     packages=find_packages(),
     install_requires=[

@@ -58,9 +58,9 @@ pip install -e .
 Here's a simple example demonstrating how to use DiffusionAnalysis to calculate and plot the MSD:
 
 ```python
-from diffusionanalysis.loaders import DatDirectoryStructureLoader
-from diffusionanalysis.trajectory import DisplacementTrajectory 
-from diffusionanalysis.analysis import SimpleMSDAnalysis
+from diffusionAnalysis.loaders import DatDirectoryStructureLoader
+from DiffusionAnalysis.trajectory import DisplacementTrajectory
+from DiffusionAnalysis.analysis import SimpleMSDAnalysis
 
 # Load the MD trajectory
 loader = DatDirectoryStructureLoader("path/to/trajectory")
