@@ -74,3 +74,8 @@ msd_data = msd_analysis.calculate_msd()
 # Plot the MSD
 fig = msd_analysis.plot_msd(msd_data)
 fig.savefig("msd_plot.png")
+```
+
+# Licence
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
