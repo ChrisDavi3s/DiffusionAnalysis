@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from ..trajectory import DisplacementTrajectory
 from typing import Optional, Union, Tuple, List
 
-class SimpleMSDAnalysis:
+class MSDAnalysis:
     def __init__(self, displacement_trajectory: DisplacementTrajectory):
         """
         Initialize the SimpleMSDAnalysis class.

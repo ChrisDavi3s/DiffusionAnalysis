@@ -17,6 +17,21 @@ class tMSDAnalysis:
 
     def calculate_tMSD(self, min_tau: int, max_tau: int, num_points: int, atom_indices: Optional[np.ndarray] = None,
                        framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+        '''
+        Calculate the time-averaged mean squared displacement (tMSD).
+
+        Parameters:
+            min_tau (int): The minimum time lag value to consider.
+            max_tau (int): The maximum time lag value to consider.
+            num_points (int): The number of time lag values to consider.
+            atom_indices (np.ndarray, optional): The indices of the atoms to track. Defaults to None.
+            framework_indices (np.ndarray, optional): The indices of the framework atoms. Defaults to None.
+            correct_drift (bool, optional): Whether to correct for framework drift. Defaults to False.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: The time lag values and the corresponding tMSD values.
+        '''
+       
         displacements = self.displacement_trajectory.get_relevant_displacements(atom_indices, framework_indices, correct_drift)
         tau_values = np.logspace(np.log10(min_tau), np.log10(max_tau), num_points, dtype=int)
         tMSD_values = []
