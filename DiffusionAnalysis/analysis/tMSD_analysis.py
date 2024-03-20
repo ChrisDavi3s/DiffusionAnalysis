@@ -32,12 +32,13 @@ class tMSDAnalysis:
                 start_index = i * tau
                 end_index = (i + 1) * tau
                 bin_displacements = displacements[:, start_index:end_index]
+                displacement = np.sum(bin_displacements, axis=1)
 
-                sum_x_squared = np.sum(bin_displacements[:, :, 0])**2
-                sum_y_squared = np.sum(bin_displacements[:, :, 1])**2
-                sum_z_squared = np.sum(bin_displacements[:, :, 2])**2
+                msd_x = np.mean(np.square(displacement[:, 0]), axis=0)
+                msd_y = np.mean(np.square(displacement[:, 1]), axis=0)
+                msd_z = np.mean(np.square(displacement[:, 2]), axis=0)
 
-                sum_squared_displacements[i] = sum_x_squared + sum_y_squared + sum_z_squared
+                sum_squared_displacements[i] = msd_x + msd_y + msd_z
 
             tMSD = np.mean(sum_squared_displacements)
             tMSD_values.append(tMSD)
