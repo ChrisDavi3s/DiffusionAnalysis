@@ -58,3 +58,4 @@ MANIFEST
 .venv*/
 .conda*/
 .python-version
+DiffusionAnalysis/examples/displacement_traj.pickle

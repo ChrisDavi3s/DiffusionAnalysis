@@ -15,7 +15,7 @@ class SimpleMSDAnalysis:
         # TODO - add ability to convert to Cartesian coordinates (which isnt hard)
         self.displacement_trajectory = displacement_trajectory
 
-    def calculate_msd(self, atom_indices: Optional[np.ndarray] = None, framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False, return_3d_msd: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    def calculate_msd(self, atom_indices: Optional[np.ndarray] = None, framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False, return_3d_msd: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Calculate the mean squared displacement (MSD) for the selected atoms.
 
@@ -32,16 +32,17 @@ class SimpleMSDAnalysis:
                 Tuple[np.ndarray, np.ndarray, np.ndarray]: The MSD arrays for each direction (x, y, z).
         """
         displacements = self.displacement_trajectory.get_relevant_displacements(atom_indices, framework_indices, correct_drift)
-        squared_displacements = np.square(displacements)
 
-        if not return_3d_msd:
-            msd_x = np.mean(squared_displacements[:, :, 0], axis=0)
-            msd_y = np.mean(squared_displacements[:, :, 1], axis=0)
-            msd_z = np.mean(squared_displacements[:, :, 2], axis=0)
-            return msd_x, msd_y, msd_z
+        cumulative_displacements = np.cumsum(displacements, axis=1)
+
+        msd_x = np.mean(np.square(cumulative_displacements[:, :, 0]), axis=0)
+        msd_y = np.mean(np.square(cumulative_displacements[:, :, 1]), axis=0)
+        msd_z = np.mean(np.square(cumulative_displacements[:, :, 2]), axis=0)
+
+        if return_3d_msd:
+            return msd_x + msd_y + msd_z
         else:
-            msd_total = np.mean(np.sum(squared_displacements, axis=2), axis=0)
-            return msd_total
+            return msd_x, msd_y, msd_z
 
     def calculate_msd_along_lattice_vector(self, lattice_vector: np.ndarray, atom_indices: Optional[np.ndarray] = None, framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False) -> np.ndarray:
         """
@@ -57,41 +58,59 @@ class SimpleMSDAnalysis:
             np.ndarray: The MSD array along the lattice vector.
         """
         displacements = self.displacement_trajectory.get_relevant_displacements(atom_indices, framework_indices, correct_drift)
+
+        # Normalize the lattice vector
+        lattice_vector = lattice_vector / np.linalg.norm(lattice_vector)
+
+        # Project the displacements onto the lattice vector
         projected_displacements = np.dot(displacements, lattice_vector)
-        squared_displacements = np.square(projected_displacements)
-        msd = np.mean(squared_displacements, axis=0)
+
+        # Calculate the cumulative displacements along the lattice vector
+        cumulative_displacements = np.cumsum(projected_displacements, axis=1)
+
+        # Calculate the mean squared displacement along the lattice vector
+        msd = np.mean(np.square(cumulative_displacements), axis=0)
+
         return msd
-    
-    def plot_msd(self, msd_data: Union[np.ndarray, Tuple[np.ndarray, ...]], labels: Optional[Union[str, List[str]]] = None, skip_points: int = 0, **kwargs) -> plt.Figure:
-            """
-            Plot the mean squared displacement (MSD) data.
+            
+    def plot_msd(self, msd_data: Union[np.ndarray, Tuple[np.ndarray, ...]], labels: Optional[Union[str, List[str]]] = None, skip_points: int = 0, log_scale: bool = False, **kwargs) -> plt.Figure:
+        """
+        Plot the mean squared displacement (MSD) data.
 
-            Args:
-                msd_data (Union[np.ndarray, Tuple[np.ndarray, ...]]): The MSD data to plot. Can be a single array or a tuple of arrays.
-                labels (Optional[Union[str, List[str]]], optional): The labels for the MSD curves. Defaults to None.
-                skip_points (int, optional): The number of initial points to skip when plotting the MSD data. Defaults to 0.
-                **kwargs: Additional keyword arguments for customizing the plot.
+        Args:
+            msd_data (Union[np.ndarray, Tuple[np.ndarray, ...]]): The MSD data to plot. Can be a single array or a tuple of arrays.
+            labels (Optional[Union[str, List[str]]], optional): The labels for the MSD curves. Defaults to None.
+            skip_points (int, optional): The number of initial points to skip when plotting the MSD data. Defaults to 0.
+            log_scale (bool, optional): Whether to use logarithmic scaling on both axes. Defaults to False.
+            **kwargs: Additional keyword arguments for customizing the plot.
 
-            Returns:
-                plt.Figure: The matplotlib figure object.
-            """
-            fig = plt.figure(figsize=kwargs.get('figsize', (10, 6)))
-            timestep = self.displacement_trajectory.timestep
-            time_unit = self.displacement_trajectory.time_unit.value
+        Returns:
+            plt.Figure: The matplotlib figure object.
+        """
+        fig, ax = plt.subplots(figsize=kwargs.get('figsize', (12, 8)))
+        timestep = self.displacement_trajectory.timestep
+        time_unit = self.displacement_trajectory.time_unit.value
 
-            if isinstance(msd_data, tuple):
-                for i, msd in enumerate(msd_data):
-                    plt.plot(np.arange(skip_points, len(msd)) * timestep, msd[skip_points:], label=labels[i] if labels else None)
+        if isinstance(msd_data, tuple):
+            for i, msd in enumerate(msd_data):
+                if log_scale:
+                    ax.loglog(np.arange(skip_points, len(msd)) * timestep, msd[skip_points:], label=labels[i] if labels else None)
+                else:
+                    ax.plot(np.arange(skip_points, len(msd)) * timestep, msd[skip_points:], label=labels[i] if labels else None)
+        else:
+            if log_scale:
+                ax.loglog(np.arange(skip_points, len(msd_data)) * timestep, msd_data[skip_points:], label=labels)
             else:
-                plt.plot(np.arange(skip_points, len(msd_data)) * timestep, msd_data[skip_points:], label=labels if labels else None)
+                ax.plot(np.arange(skip_points, len(msd_data)) * timestep, msd_data[skip_points:], label=labels)
 
-            plt.title(kwargs.get('title', 'Mean Squared Displacement'))
-            plt.xlabel(kwargs.get('xlabel', f'Time ({time_unit})'))
-            plt.ylabel(kwargs.get('ylabel', 'MSD (Å^2)'))
-            plt.legend(loc=kwargs.get('legend_loc', 'best'))
+        ax.set_title(kwargs.get('title', 'Mean Squared Displacement'))
+        ax.set_xlabel(kwargs.get('xlabel', f'Time ({time_unit})'))
+        ax.set_ylabel(kwargs.get('ylabel', 'MSD (Å^2)'))
 
-            if kwargs.get('grid', True):
-                plt.grid()
+        if labels:
+            ax.legend(loc=kwargs.get('legend_loc', 'best'))
 
-            plt.tight_layout()
-            return fig
+        if kwargs.get('grid', True):
+            ax.grid()
+
+        return fig

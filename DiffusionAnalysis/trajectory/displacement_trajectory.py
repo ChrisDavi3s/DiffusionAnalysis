@@ -212,25 +212,16 @@ class DisplacementTrajectory:
             The current step or frame index.
         '''
         if self.track_lattice_vectors:
-            current_lattice_vectors = self.unique_lattice_vectors[step]
-            previous_lattice_vectors = self.unique_lattice_vectors[step - 1]
-            avg_lattice_vectors = (current_lattice_vectors + previous_lattice_vectors) / 2
+            avg_lattice_vectors = (self.unique_lattice_vectors[step] + self.unique_lattice_vectors[step - 1]) / 2
         else:
             avg_lattice_vectors = self.unique_lattice_vectors
 
-        # Calculate displacements in Cartesian coordinates
         displacements_cartesian = current_frame - previous_frame
-
-        # Calculate displacements in Cartesian coordinates
-        displacements_cartesian = current_frame - previous_frame
-
-        # Wrap displacements based on PBC
         displacements_fractional = np.linalg.solve(avg_lattice_vectors.T, displacements_cartesian.T).T
-        displacements_fractional = displacements_fractional - np.round(displacements_fractional)
+        displacements_fractional -= np.round(displacements_fractional)
 
         if self.use_cartesian:
-            displacements_cartesian = np.dot(displacements_fractional, avg_lattice_vectors)
-            self.displacement_trajectory[:, step, :] = displacements_cartesian
+            self.displacement_trajectory[:, step, :] = np.dot(displacements_fractional, avg_lattice_vectors)
         else:
             self.displacement_trajectory[:, step, :] = displacements_fractional
 
