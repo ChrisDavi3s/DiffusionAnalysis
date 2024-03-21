@@ -108,6 +108,11 @@ Install the package in development mode:
 ```bash
 pip install -e .
 ```
+## Getting Started
+
+Look at loaders/base_structure_loader.py to see how structures are loaded. 
+
+Trajectories are assumed wrapped and then unwrapped as default ... (I have NOT tested on a already unwrapped trajectory)
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
