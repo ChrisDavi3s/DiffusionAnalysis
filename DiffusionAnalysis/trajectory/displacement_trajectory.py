@@ -48,7 +48,7 @@ class DisplacementTrajectory:
                 track_lattice_vectors: bool = False,
                 max_memory : float = 1024,
                 timestep: float = 1,
-                time_unit: str | TimeUnit = 'ps') -> None:
+                time_unit: Union[str,TimeUnit] = 'ps') -> None:
         
         self.atoms_trajectory_loader: StructureLoader = atoms_trajectory_loader
         self.displacement_trajectory: np.ndarray = None
@@ -111,8 +111,8 @@ class DisplacementTrajectory:
         return(self.displacement_trajectory.nbytes + lattice_vector_memory) / 1024**2
 
     def generate_displacement_trajectory(self, structures_to_load: slice = slice(None), 
-                                         host_atoms = Optional[List[ int | str]],
-                                         framework_atoms = Optional[List[ int | str]], 
+                                         host_atoms:  Optional[List[Union[int, str]]] = None,
+                                         framework_atoms :  Optional[List[Union[int, str]]] = None, 
                                          show_progress: bool = False) -> None:
         '''
         Generate the displacement trajectory of the atoms in the MD simulation.
@@ -161,7 +161,7 @@ class DisplacementTrajectory:
 
         print(f'Completed with memory usage: {self._actual_memory_usage():.2f} MB')
 
-    def _populate_host_and_framework_atom_indices(self, atoms: Atoms, host_atoms: Optional[List[int|str]], framework_atoms: Optional[List[int|str]]) -> None:
+    def _populate_host_and_framework_atom_indices(self, atoms: Atoms, host_atoms: Optional[List[Union[int, str]]], framework_atoms: Optional[List[Union[int, str]]]) -> None:
         if host_atoms is None:
             self.host_atom_indices = np.arange(len(atoms))
             self.framework_atom_indices = np.array([])
