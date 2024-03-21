@@ -33,6 +33,7 @@ class DatStructureLoader(StructureLoader):
         except StopIteration:
             raise StopIteration()
         
+    #TODO A dat file already has this information in the header, so we can just read it from there
     def _count_steps(self) -> int:
         '''
         Count the number of steps in a .xyz file. Adds around 0.3s for 10k steps.
@@ -48,6 +49,7 @@ class DatStructureLoader(StructureLoader):
 
             return total
         
+    #TODO A dat file already has this information in the header, so we can just read it from there
     def get_total_steps(self) -> int:
         '''
         Count the number of steps in a .xyz file. Adds around 0.3s for 10k steps.

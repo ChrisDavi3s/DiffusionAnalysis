@@ -133,9 +133,13 @@ class DisplacementTrajectory:
         '''
 
         self.atoms_trajectory_loader.reset() 
+
+        if structures_to_load == slice(None):
+            structures_to_load = slice(0, self._num_frames, 1)
  
         atoms_trajectory: Iterable[Atoms] = itertools.islice(self.atoms_trajectory_loader, structures_to_load.start, structures_to_load.stop, structures_to_load.step)
         self._num_frames = self._calculate_total_structures(structures_to_load)
+        print(self._num_frames)
 
         step = 0
         previous_positions = None
@@ -145,7 +149,6 @@ class DisplacementTrajectory:
             
         for atoms in atoms_trajectory:
             self._update_lattice_vectors(atoms, step)
-
             if step == 0:
                 # Initialize the displacement trajectory and store the first positions
                 self._num_atoms = len(atoms)
@@ -241,6 +244,8 @@ class DisplacementTrajectory:
         '''
         Calculate the total number of structures to be loaded based on the slice.
         '''
+        if structures_to_load == slice(None):
+            return self.atoms_trajectory_loader.get_total_steps()
         start, stop, step = structures_to_load.indices(self.atoms_trajectory_loader.get_total_steps())
         total_structures = len(range(start, stop, step))
         return total_structures
