@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Iterable, Optional
+from typing import List, Tuple, Iterable, Optional, Union
 from ase import Atoms
 from ..loaders import StructureLoader
 from tqdm import tqdm
@@ -245,24 +245,43 @@ class DisplacementTrajectory:
         total_structures = len(range(start, stop, step))
         return total_structures
     
-    def get_relevant_displacements(self, atom_indices: Optional[np.ndarray] = None, framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False) -> np.ndarray:
+    def get_relevant_displacements(self,
+                                host_atom_indices: Optional[np.ndarray] = None,
+                                framework_indices: Optional[np.ndarray] = None,
+                                correct_drift: bool = False,
+                                return_host_com_displacement: bool = False,
+                                return_indices: bool = False) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
         """
         Get the displacements view for the selected atoms and optionally correct for framework drift.
 
         Args:
-            atom_indices (np.ndarray, optional): The indices of the atoms to include. Defaults to None.
+            host_atom_indices (np.ndarray, optional): The indices of the atoms to include. Defaults to None.
             framework_indices (np.ndarray, optional): The indices of the framework atoms. Defaults to None.
             correct_drift (bool, optional): Whether to correct for framework drift. Defaults to False.
+            return_host_com_displacement (bool, optional): Whether to return the center of mass displacement of the host atoms. Defaults to False.
+            return_indices (bool, optional): Whether to return the atom and framework indices along with the displacements. Defaults to False.
 
         Returns:
-            np.ndarray: The displacements view for the selected atoms.
+            If return_indices is False and return_host_com_displacement is False:
+                np.ndarray: The displacements view for the selected atoms.
+            If return_indices is True and return_host_com_displacement is False:
+                Tuple[np.ndarray, np.ndarray, np.ndarray]: A tuple containing the displacements view, atom indices, and framework indices.
+            If return_indices is False and return_host_com_displacement is True:
+                Tuple[np.ndarray, np.ndarray]: A tuple containing the displacements view and the center of mass displacement of the host atoms.
+            If return_indices is True and return_host_com_displacement is True:
+                Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: A tuple containing the displacements view, atom indices, framework indices, and the center of mass displacement of the host atoms.
 
         Raises:
             ValueError: If framework indices are not provided when drift correction is enabled.
             ValueError: If atom indices and framework indices overlap.
         """
-        if atom_indices is None:
-            atom_indices = self.host_atom_indices
+        assert self.displacement_trajectory is not None, "Displacement trajectory has not been generated."
+
+        # Check same atom index not in both host_atom_indices and framework_indices
+        assert host_atom_indices is None or framework_indices is None or len(np.intersect1d(host_atom_indices, framework_indices)) == 0, "Atom indices and framework indices cannot overlap."
+
+        if host_atom_indices is None:
+            host_atom_indices = self.host_atom_indices
 
         if framework_indices is None:
             framework_indices = self.framework_atom_indices
@@ -270,14 +289,30 @@ class DisplacementTrajectory:
         if correct_drift and len(framework_indices) == 0:
             raise ValueError("Framework indices must be provided for drift correction.")
 
-        if len(np.intersect1d(atom_indices, framework_indices)) > 0:
+        if len(np.intersect1d(host_atom_indices, framework_indices)) > 0:
             raise ValueError("Atom indices and framework indices cannot overlap.")
 
         if correct_drift:
             framework_displacements = self.displacement_trajectory[framework_indices]
-            framework_center_of_mass = np.mean(framework_displacements, axis=0, keepdims=True)
-            displacements = self.displacement_trajectory[atom_indices] - framework_center_of_mass
+            framework_atomic_numbers = self.atomic_numbers[framework_indices]
+            framework_masses = self.get_atomic_masses(framework_atomic_numbers)
+            total_framework_mass = np.sum(framework_masses)
+            framework_center_of_mass = np.sum(framework_displacements * framework_masses[:, np.newaxis, np.newaxis], axis=0) / total_framework_mass
+            displacements = self.displacement_trajectory[host_atom_indices] - framework_center_of_mass
         else:
-            displacements = self.displacement_trajectory[atom_indices]
+            displacements = self.displacement_trajectory[host_atom_indices]
 
-        return displacements
+        if return_host_com_displacement:
+            host_atomic_numbers = self.atomic_numbers[host_atom_indices]
+            host_masses = self.get_atomic_masses(host_atomic_numbers)
+            total_host_mass = np.sum(host_masses)
+            host_com_displacement = np.sum(displacements * host_masses[:, np.newaxis, np.newaxis], axis=0) / total_host_mass
+
+        if return_indices and return_host_com_displacement:
+            return displacements, host_atom_indices, framework_indices, host_com_displacement
+        elif return_indices:
+            return displacements, host_atom_indices, framework_indices
+        elif return_host_com_displacement:
+            return displacements, host_com_displacement
+        else:
+            return displacements
