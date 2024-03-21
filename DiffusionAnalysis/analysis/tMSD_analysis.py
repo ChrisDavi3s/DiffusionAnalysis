@@ -15,47 +15,49 @@ class tMSDAnalysis:
     def __init__(self, displacement_trajectory: DisplacementTrajectory):
         self.displacement_trajectory = displacement_trajectory
 
+    #TODO memory consumption is high, need to optimise?? I think it's fine but a check would be good ... maybe against the max memory available in displacement_trajectory?
     def calculate_tMSD(self, min_tau: int, max_tau: int, num_points: int, atom_indices: Optional[np.ndarray] = None,
-                       framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+                    framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         '''
         Calculate the time-averaged mean squared displacement (tMSD).
 
         Parameters:
-            min_tau (int): The minimum time lag value to consider.
-            max_tau (int): The maximum time lag value to consider.
-            num_points (int): The number of time lag values to consider.
-            atom_indices (np.ndarray, optional): The indices of the atoms to track. Defaults to None.
-            framework_indices (np.ndarray, optional): The indices of the framework atoms. Defaults to None.
-            correct_drift (bool, optional): Whether to correct for framework drift. Defaults to False.
+        min_tau (int): The minimum time lag value to consider.
+        max_tau (int): The maximum time lag value to consider.
+        num_points (int): The number of time lag values to consider.
+        atom_indices (np.ndarray, optional): The indices of the atoms to track. Defaults to None.
+        framework_indices (np.ndarray, optional): The indices of the framework atoms. Defaults to None.
+        correct_drift (bool, optional): Whether to correct for framework drift. Defaults to False.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: The time lag values and the corresponding tMSD values.
+        Tuple[np.ndarray, np.ndarray]: The time lag values and the corresponding tMSD values.
         '''
-       
+
         displacements = self.displacement_trajectory.get_relevant_displacements(atom_indices, framework_indices, correct_drift)
+
         tau_values = np.logspace(np.log10(min_tau), np.log10(max_tau), num_points, dtype=int)
+
         tMSD_values = []
+
+        cumulative_displacements = np.cumsum(displacements, axis=1)
 
         for tau in tqdm(tau_values, desc="Calculating tMSD"):
             if tau >= displacements.shape[1]:
                 break
 
-            num_bins = displacements.shape[1] // tau
-            sum_squared_displacements = np.zeros(num_bins)
+            num_steps = displacements.shape[1]
+            num_bins = num_steps - tau
 
-            for i in range(num_bins):
-                start_index = i * tau
-                end_index = (i + 1) * tau
-                bin_displacements = displacements[:, start_index:end_index]
-                displacement = np.sum(bin_displacements, axis=1)
+            # Use broadcasting to calculate the displacement differences
+            start_indices = np.arange(num_bins)[:, np.newaxis]
+            end_indices = start_indices + tau
+            displacement_diffs = cumulative_displacements[:, end_indices] - cumulative_displacements[:, start_indices]
 
-                msd_x = np.mean(np.square(displacement[:, 0]), axis=0)
-                msd_y = np.mean(np.square(displacement[:, 1]), axis=0)
-                msd_z = np.mean(np.square(displacement[:, 2]), axis=0)
+            # Calculate the squared displacement for each atom and each bin
+            squared_displacements = np.sum(displacement_diffs**2, axis=2)
 
-                sum_squared_displacements[i] = msd_x + msd_y + msd_z
-
-            tMSD = np.mean(sum_squared_displacements)
+            # Take the mean over atoms and bins
+            tMSD = np.mean(squared_displacements)
             tMSD_values.append(tMSD)
 
         time_lag_values = tau_values[:len(tMSD_values)] * self.displacement_trajectory.timestep
