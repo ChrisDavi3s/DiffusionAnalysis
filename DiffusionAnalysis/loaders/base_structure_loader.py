@@ -15,11 +15,11 @@ class StructureLoader(ABC):
 
     Returns
     -------
-    AseIterable object to iterate over the structures in the trajectory.
+    Iterable ASE Atoms object to iterate over the structures in the trajectory.
     '''
 
     @abstractmethod
-    def __init__(self, filepath: str, structures_slice: Optional[slice]):
+    def __init__(self, filepath: str, structures_slice: Optional[slice|int]):
         self.filepath = filepath
         self.structures_slice = structures_slice
         self._total_steps = None

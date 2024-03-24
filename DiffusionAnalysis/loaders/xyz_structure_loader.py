@@ -14,7 +14,7 @@ class XYZStructureLoader(StructureLoader):
         Slice object to specify which steps to load. None for the end means load all steps in the file
 
     Returns:
-    AseIterable object to iterate over the structures in the trajectory. 
+    Iterable ASE Atoms object to iterate over the structures in the trajectory.
     '''
 
     def __init__(self, filepath: str, structures_slice: Optional[slice] = None):
