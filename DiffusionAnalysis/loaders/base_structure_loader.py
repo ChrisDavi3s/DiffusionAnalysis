@@ -1,28 +1,112 @@
 from abc import ABC, ABCMeta, abstractmethod
 from ase.atoms import Atoms
-from typing import Optional, Iterator
+from typing import Optional, Iterator, Union, Tuple
+from ..trajectory.time_unit import TimeUnit
 
 class StructureLoader(ABC):
     '''
-    Abstract class (interface) to load and store an iterable of structures that lazy load.
+    Abstract class (interface) to load and store an iterable of structures with lazy loading.
+
+    The `StructureLoader` class provides a generic interface for loading and iterating over structures
+    from a trajectory file. It supports lazy loading, allowing efficient memory usage by loading structures
+    on-the-fly as they are accessed.
+
+    Concrete implementations of the `StructureLoader` class should inherit from this abstract base class
+    and provide implementations for the abstract methods.
 
     Parameters
     ----------
-    filepath: str
-        Path to the trajectory file
-    steps_to_load: slice
-        Slice object to specify which steps to load. None for the end means load all steps in the file
+    filepath : str
+        The path to the trajectory file.
+    structures_slice : Optional[Union[slice, int]]
+        A slice object or an integer specifying the range or specific steps to load from the trajectory.
+        If a slice object is provided, it should have the format `slice(start, stop, step)`, where `start`
+        is the starting step (inclusive), `stop` is the ending step (exclusive), and `step` is the step size.
+        If an integer is provided, it represents a specific step to load.
+        If `None`, all steps from the trajectory will be loaded.
+    md_timestep : Optional[float], default=1
+        The time step of the MD simulation, representing the time difference between consecutive frames.
+    md_time_unit : Union[str, TimeUnit], default='ps'
+        The unit of time for the `md_timestep`. Accepted string values are 'fs' (femtoseconds),
+        'ps' (picoseconds), 'ns' (nanoseconds), 'us' (microseconds), 'ms' (milliseconds), or 's' (seconds).
+        Alternatively, a `TimeUnit` enum value can be provided.
+    md_start_offset : Optional[float], default=None
+        The starting time offset of the trajectory in the specified time unit. If `None`, the starting time
+        will be determined based on the `structures_slice`.
 
-    Returns
+    Attributes
+    ----------
+    filepath : str
+        The path to the trajectory file.
+    structures_slice : Optional[Union[slice, int]]
+        The slice object or integer specifying the range or specific steps to load from the trajectory.
+    timestep : float
+        The time step of the MD simulation, adjusted based on the `structures_slice` and `md_timestep`.
+    time_unit : TimeUnit
+        The unit of time for the `timestep`, adjusted based on the `structures_slice` and `md_time_unit`.
+    start_time : float
+        The starting time of the trajectory, considering the `md_start_offset` and `structures_slice`.
+    end_time : float
+        The ending time of the trajectory, calculated based on the `start_time`, `structures_slice`, and `timestep`.
+
+    Methods
     -------
-    Iterable ASE Atoms object to iterate over the structures in the trajectory.
+    __iter__() -> Iterator[Atoms]
+        Returns an iterator over the structures in the trajectory.
+    __next__() -> Atoms
+        Returns the next structure in the trajectory.
+    __len__() -> int
+        Returns the total number of steps in the trajectory.
+    get_total_steps() -> int
+        Counts the total number of steps in the trajectory file.
+    has_lattice_vectors() -> bool
+        Returns `True` if the trajectory file contains lattice vectors.
+    reset() -> None
+        Resets the iterator to the first step.
+    get_number_of_atoms() -> int
+        Returns the number of atoms in the first step of the trajectory file.
+    get_trajectory_time_info() -> Tuple[float, float, float, TimeUnit]
+        Returns a tuple containing the start time, end time, timestep, and time unit of the trajectory.
     '''
 
     @abstractmethod
-    def __init__(self, filepath: str, structures_slice: Optional[slice|int]):
+    def __init__(self, filepath: str, 
+                 structures_slice: Optional[Union[slice, int]], 
+                 md_timestep: Optional[float] = 1, 
+                 md_time_unit: Union[str, TimeUnit] = 'ps', 
+                 md_start_offset: Optional[float] = None):
+        '''
+        Initializes the StructureLoader instance.
+
+        When initializing, the time units and timestep are reshaped based on the provided slice.
+        '''
         self.filepath = filepath
         self.structures_slice = structures_slice
         self._total_steps = None
+        self.timestep = md_timestep
+        self.time_unit = TimeUnit(md_time_unit) if isinstance(md_time_unit, str) else md_time_unit
+        self.start_time = None
+        self.end_time = None
+
+        if self.structures_slice is None:
+            start = 0
+            stop = self.get_total_steps()
+        elif isinstance(self.structures_slice, slice):
+            step = self.structures_slice.step if self.structures_slice.step is not None else 1
+            self.timestep *= step
+            self.timestep, self.time_unit = TimeUnit.adjust_timestep_and_unit(self.timestep, self.time_unit)
+
+            start = self.structures_slice.start if self.structures_slice.start is not None else 0
+            stop = self.structures_slice.stop if self.structures_slice.stop is not None else self.get_total_steps()
+        else:
+            raise ValueError("structures_slice must be either None or a slice object.")
+
+        if md_start_offset is None:
+            self.start_time = start * self.timestep
+        else:
+            self.start_time = md_start_offset
+
+        self.end_time = self.start_time + (stop - start) * self.timestep
 
     @abstractmethod
     def __iter__(self) -> Iterator[Atoms]:
@@ -47,7 +131,7 @@ class StructureLoader(ABC):
     @abstractmethod
     def get_total_steps(self) -> int:
         '''
-        Count the number of steps in the trajectory file.
+        Counts the total number of steps in the trajectory file.
         '''
         pass
 
@@ -61,13 +145,25 @@ class StructureLoader(ABC):
     @abstractmethod
     def reset(self) -> None:
         '''
-        Reset the iterator to the first step.
+        Resets the iterator to the first step.
         '''
         pass
 
-    @staticmethod
+    @abstractmethod
     def get_number_of_atoms(self) -> int:
         '''
         Returns the number of atoms in the first step of the trajectory file.
         '''
         pass
+
+    @property
+    def get_trajectory_time_info(self) -> Tuple[float, float, float, TimeUnit]:
+        """
+        Returns a tuple containing the start time, end time, timestep, and time unit of the trajectory.
+
+        Returns
+        -------
+        Tuple[float, float, float, TimeUnit]
+            A tuple containing the start time, end time, timestep, and time unit of the trajectory.
+        """
+        return self.start_time, self.end_time, self.timestep, self.time_unit
