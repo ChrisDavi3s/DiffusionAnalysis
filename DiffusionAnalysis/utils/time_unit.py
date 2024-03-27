@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Tuple, Union
 
 class TimeUnit(Enum):
     '''
@@ -31,3 +32,29 @@ class TimeUnit(Enum):
             return 1e-3
         else:  # SECONDS
             return 1
+        
+    @staticmethod
+    def adjust_timestep_and_unit(timestep: float, time_unit: Union[str, 'TimeUnit']) -> Tuple[float, 'TimeUnit']:
+        """
+        Adjust the timestep and time unit based on the magnitude of the timestep.
+
+        Returns:
+            Tuple[float, TimeUnit]: The adjusted timestep and time unit.
+        """
+        if isinstance(time_unit, str):
+            time_unit = TimeUnit(time_unit)
+
+        time_units = list(TimeUnit)
+        current_index = time_units.index(time_unit)
+
+        while timestep >= 1000 and current_index < len(time_units) - 1:
+            timestep /= 1000
+            current_index += 1
+            time_unit = time_units[current_index]
+
+        while timestep < 1 and current_index > 0:
+            timestep *= 1000
+            current_index -= 1
+            time_unit = time_units[current_index]
+
+        return timestep, time_unit

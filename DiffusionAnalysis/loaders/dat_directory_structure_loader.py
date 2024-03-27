@@ -1,9 +1,9 @@
 import os
+from ..utils import TimeUnit
 from .base_structure_loader import StructureLoader
 from ase.io import read
 from ase.atoms import Atoms
 from typing import cast, Optional, Union, Iterator, Tuple
-from ..trajectory.time_unit import TimeUnit
 
 class DatDirectoryStructureLoader(StructureLoader):
     '''

@@ -3,7 +3,7 @@ from .base_structure_loader import StructureLoader
 from ase.io import read
 from ase.atoms import Atoms
 from typing import List, Optional, Union, Iterator, Tuple
-from ..trajectory.time_unit import TimeUnit
+from ..utils.time_unit import TimeUnit
 
 class ASEListStructureLoader(StructureLoader):
     '''

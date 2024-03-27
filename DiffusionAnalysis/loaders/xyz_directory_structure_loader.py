@@ -2,7 +2,7 @@ from .base_structure_loader import StructureLoader
 from ase.io import read, iread
 from ase.atoms import Atoms
 from typing import Optional, Union, Iterator, Tuple
-from ..trajectory.time_unit import TimeUnit
+from ..utils.time_unit import TimeUnit
 
 class XYZStructureLoader(StructureLoader):
     '''
