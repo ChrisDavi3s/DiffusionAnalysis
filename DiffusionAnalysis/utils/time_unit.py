@@ -52,7 +52,7 @@ class TimeUnit(Enum):
             current_index += 1
             time_unit = time_units[current_index]
 
-        while timestep < 1 and current_index > 0:
+        while timestep < 0.1 and current_index > 0:
             timestep *= 1000
             current_index -= 1
             time_unit = time_units[current_index]

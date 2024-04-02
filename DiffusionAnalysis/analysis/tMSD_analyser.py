@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ..trajectory import DisplacementTrajectory
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Union
 from tqdm import tqdm
 
-class tMSDAnalysis:
+class TMSDAnalyser:
     '''
     Class for calculating and plotting the time-averaged mean squared displacement (tMSD).
 
@@ -13,11 +13,13 @@ class tMSDAnalysis:
     '''
 
     def __init__(self, displacement_trajectory: DisplacementTrajectory):
+        assert displacement_trajectory.use_cartesian is True, "Displacement trajectory must be in Cartesian coordinates."
         self.displacement_trajectory = displacement_trajectory
 
-    #TODO memory consumption is high, need to optimise?? I think it's fine but a check would be good ... maybe against the max memory available in displacement_trajectory?
-    def calculate_tMSD(self, min_tau: int, max_tau: int, num_points: int, atom_indices: Optional[np.ndarray] = None,
-                    framework_indices: Optional[np.ndarray] = None, correct_drift: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+    def calculate_tMSD(self, min_tau: int, max_tau: int, num_points: int, 
+                       tracer_specs: Optional[List[Union[int, str]]] = None,
+                       framework_specs: Optional[List[Union[int, str]]] = None, 
+                       correct_drift: bool = False) -> Tuple[np.ndarray, np.ndarray]:
         '''
         Calculate the time-averaged mean squared displacement (tMSD).
 
@@ -25,17 +27,19 @@ class tMSDAnalysis:
         min_tau (int): The minimum time lag value to consider.
         max_tau (int): The maximum time lag value to consider.
         num_points (int): The number of time lag values to consider.
-        atom_indices (np.ndarray, optional): The indices of the atoms to track. Defaults to None.
-        framework_indices (np.ndarray, optional): The indices of the framework atoms. Defaults to None.
+        tracer_specs (List[Union[int, str]], optional): The indices or symbols of the tracer atoms to track.
+                                                        Defaults to None.
+        framework_specs (List[Union[int, str]], optional): The indices or symbols of the framework atoms.
+                                                        Defaults to None.
         correct_drift (bool, optional): Whether to correct for framework drift. Defaults to False.
 
         Returns:
         Tuple[np.ndarray, np.ndarray]: The time lag values and the corresponding tMSD values.
         '''
 
-        displacements = self.displacement_trajectory.get_relevant_displacements(atom_indices, framework_indices, correct_drift)
+        displacements = self.displacement_trajectory.get_relevant_displacements(tracer_specs, framework_specs, correct_drift)
 
-        tau_values = np.logspace(np.log10(min_tau), np.log10(max_tau), num_points, dtype=int)
+        tau_values = np.unique(np.logspace(0, np.log10(max_tau), num_points, dtype=int))
 
         tMSD_values = []
 
@@ -52,15 +56,12 @@ class tMSDAnalysis:
             start_indices = np.arange(num_bins)[:, np.newaxis]
             end_indices = start_indices + tau
             displacement_diffs = cumulative_displacements[:, end_indices] - cumulative_displacements[:, start_indices]
-
-            # Calculate the squared displacement for each atom and each bin
             squared_displacements = np.sum(displacement_diffs**2, axis=2)
-
-            # Take the mean over atoms and bins
             tMSD = np.mean(squared_displacements)
             tMSD_values.append(tMSD)
 
-        time_lag_values = tau_values[:len(tMSD_values)] * self.displacement_trajectory.timestep
+        timestep = self.displacement_trajectory.atoms_trajectory_loader.timestep
+        time_lag_values = tau_values[:len(tMSD_values)] * timestep
 
         return time_lag_values, np.array(tMSD_values)
 
@@ -79,7 +80,7 @@ class tMSDAnalysis:
         '''
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (8, 6)))
         ax.loglog(time_lag_values, tMSD_values, label=label)
-        time_unit = self.displacement_trajectory.time_unit.value
+        time_unit = self.displacement_trajectory.atoms_trajectory_loader.time_unit.value
         ax.set_xlabel(kwargs.get('xlabel', f'Time lag ({time_unit})'))
         ax.set_ylabel(kwargs.get('ylabel', r'tMSD ($\AA^2$)'))
         ax.legend(loc=kwargs.get('legend_loc', 'best'))
@@ -126,7 +127,7 @@ class tMSDAnalysis:
         time_lag_values = time_lag_values[:len(smoothed_exponents)]
 
         ax.semilogx(time_lag_values, smoothed_exponents, label=label)
-        time_unit = self.displacement_trajectory.time_unit.value
+        time_unit = self.displacement_trajectory.atoms_trajectory_loader.time_unit.value
         ax.set_xlabel(kwargs.get('xlabel', f'Time lag ({time_unit})'))
         ax.set_ylabel(kwargs.get('ylabel', r'Exponent of $\langle r^2(t)\rangle$'))
         ax.legend(loc=kwargs.get('legend_loc', 'best'))
@@ -137,5 +138,4 @@ class tMSDAnalysis:
         ax.axhline(y=2, color='purple', linestyle='--')
         fig.tight_layout()
 
-
-        return fig  
+        return fig

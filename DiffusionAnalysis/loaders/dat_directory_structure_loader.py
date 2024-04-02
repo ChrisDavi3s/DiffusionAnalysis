@@ -102,6 +102,8 @@ class DatDirectoryStructureLoader(StructureLoader):
 
     def reset(self) -> None:
         self.file_index = 0
+        self._total_steps = None
+        self._total_atoms = None
 
     def get_number_of_atoms(self) -> int:
         '''

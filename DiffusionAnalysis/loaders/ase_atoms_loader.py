@@ -69,6 +69,7 @@ class ASEListStructureLoader(StructureLoader):
         return self.atoms_list[0].cell is not None
 
     def reset(self) -> None:
+        self._total_steps = None
         self.iter_obj = iter(self.atoms_list)
 
     def get_number_of_atoms(self) -> int:

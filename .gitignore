@@ -59,3 +59,6 @@ MANIFEST
 .conda*/
 .python-version
 DiffusionAnalysis/examples/displacement_traj.pickle
+config.py
+.config.py
+.config*

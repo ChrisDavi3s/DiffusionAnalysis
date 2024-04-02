@@ -77,7 +77,7 @@ class DatStructureLoader(StructureLoader):
         return self._total_steps
 
     def __len__(self) -> int:
-        return super().__len__()
+        return self.get_total_steps()
 
     @property
     def has_lattice_vectors(self) -> bool:
@@ -91,6 +91,8 @@ class DatStructureLoader(StructureLoader):
         Reset the iterator to the first step.
         '''
         self._iterator = iter(iread(self.filepath, index=self.structures_slice))
+        self._total_steps = None
+        self._total_atoms = None
 
     def get_number_of_atoms(self) -> int:
         '''
