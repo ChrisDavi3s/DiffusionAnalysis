@@ -1,8 +1,8 @@
 from .base_structure_loader import StructureLoader
 from ase.io import read, iread
 from ase.atoms import Atoms
-from typing import Optional, Iterator, Tuple
-from ..trajectory.time_unit import TimeUnit
+from typing import Optional, Iterator, Tuple, Union
+from ..utils.time_unit import TimeUnit
 
 class XYZStructureLoader(StructureLoader):
     '''
@@ -88,6 +88,8 @@ class XYZStructureLoader(StructureLoader):
         Reset the iterator to the first step.
         '''
         self._iterator = iter(iread(self.filepath, index=self.structures_slice))
+        self._total_atoms = None
+        self._total_steps = None
 
     def get_number_of_atoms(self) -> int:
         '''

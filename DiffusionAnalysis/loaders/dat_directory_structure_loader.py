@@ -1,9 +1,9 @@
 import os
+from ..utils import TimeUnit
 from .base_structure_loader import StructureLoader
 from ase.io import read
 from ase.atoms import Atoms
 from typing import cast, Optional, Union, Iterator, Tuple
-from ..trajectory.time_unit import TimeUnit
 
 class DatDirectoryStructureLoader(StructureLoader):
     '''
@@ -102,6 +102,8 @@ class DatDirectoryStructureLoader(StructureLoader):
 
     def reset(self) -> None:
         self.file_index = 0
+        self._total_steps = None
+        self._total_atoms = None
 
     def get_number_of_atoms(self) -> int:
         '''

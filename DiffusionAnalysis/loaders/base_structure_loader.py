@@ -1,7 +1,7 @@
+from DiffusionAnalysis.utils.time_unit import TimeUnit
 from abc import ABC, ABCMeta, abstractmethod
 from ase.atoms import Atoms
 from typing import Optional, Iterator, Union, Tuple
-from ..trajectory.time_unit import TimeUnit
 
 class StructureLoader(ABC):
     '''
@@ -71,10 +71,10 @@ class StructureLoader(ABC):
 
     @abstractmethod
     def __init__(self, filepath: str, 
-                 structures_slice: Optional[Union[slice, int]], 
-                 md_timestep: Optional[float] = 1, 
-                 md_time_unit: Union[str, TimeUnit] = 'ps', 
-                 md_start_offset: Optional[float] = None):
+                structures_slice: Optional[Union[slice, int]], 
+                md_timestep: Optional[float] = 1, 
+                md_time_unit: Union[str, TimeUnit] = 'ps', 
+                md_start_offset: Optional[float] = None):
         '''
         Initializes the StructureLoader instance.
 
