@@ -40,7 +40,7 @@ def convert_to_cartesian(positions: np.ndarray, lattice_vectors: Union[np.ndarra
     else:
         raise ValueError("Invalid lattice_vectors shape. Expected (3, 3) or (n_frames, 3, 3).")
 
-def calculate_center_of_mass(positions: np.ndarray, atomic_numbers: np.ndarray) -> Union[np.ndarray, np.ndarray]:
+def calculate_center_of_mass(positions: np.ndarray, atomic_numbers: np.ndarray, weight_by_mass = True) -> Union[np.ndarray, np.ndarray]:
     """
     Calculate the center of mass of a set of atoms.
 
@@ -57,10 +57,16 @@ def calculate_center_of_mass(positions: np.ndarray, atomic_numbers: np.ndarray) 
 
     if positions.ndim == 2:
         # Single frame
-        return np.sum(positions * masses[:, np.newaxis], axis=0) / total_mass
+        if not weight_by_mass:
+            return np.sum(positions) / len(positions)
+        else:
+            return np.sum(positions * masses[:, np.newaxis], axis=0) / total_mass
     elif positions.ndim == 3:
         # Multiple frames
-        com = np.einsum('ijk,i->jk', positions, masses) / total_mass
+        if not weight_by_mass:
+            com = np.sum(positions, axis=1) / positions.shape[1]
+        else:
+            com = np.einsum('ijk,i->jk', positions, masses) / total_mass
         return com
     else:
         raise ValueError("Invalid positions shape. Expected (n_atoms, 3) or (n_frames, n_atoms, 3).")
