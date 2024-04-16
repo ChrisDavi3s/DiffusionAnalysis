@@ -1,4 +1,4 @@
-from DiffusionAnalysis.utils.time_unit import TimeUnit
+from DiffusionAnalysis.utils.time_utils import TimeUnit, TimeData 
 from abc import ABC, abstractmethod
 from ase.atoms import Atoms
 from typing import Optional, Iterator, Union, Tuple, List
@@ -95,31 +95,10 @@ class StructureLoader(ABC):
         self.structures_slice = structures_slice
         self.temperature = md_temperature
         self._total_steps = 0
-        self.timestep = md_timestep
         self.time_unit = TimeUnit(md_time_unit) if isinstance(md_time_unit, str) else md_time_unit
-        self.start_time = 0
-        self.end_time = 0
         self.atom_map = atom_map 
 
-        if self.structures_slice is None:
-            start = 0
-            stop = self.get_total_steps()
-        elif isinstance(self.structures_slice, slice):
-            step = self.structures_slice.step if self.structures_slice.step is not None else 1
-            self.timestep *= step
-            self.timestep, self.time_unit = TimeUnit.adjust_timestep_and_unit(self.timestep, self.time_unit)
-
-            start = self.structures_slice.start if self.structures_slice.start is not None else 0
-            stop = self.structures_slice.stop if self.structures_slice.stop is not None else self.get_total_steps()
-        else:
-            raise ValueError("structures_slice must be either None or a slice object.")
-
-        if md_start_offset is None:
-            self.start_time = start * self.timestep
-        else:
-            self.start_time = md_start_offset
-
-        self.end_time = self.start_time + (stop - start) * self.timestep
+        self.time_data = TimeData(md_timestep, md_time_unit, md_start_offset, structures_slice, number_of_steps=self._total_steps)
 
     @abstractmethod
     def __iter__(self) -> Iterator[Atoms]:
@@ -170,7 +149,7 @@ class StructureLoader(ABC):
         pass
 
     @property
-    def get_trajectory_time_info(self) -> Tuple[float, float, float, TimeUnit]:
+    def get_trajectory_time_info(self) -> TimeData:
         """
         Returns a tuple containing the start time, end time, timestep, and time unit of the trajectory.
 
@@ -179,7 +158,7 @@ class StructureLoader(ABC):
         Tuple[float, float, float, TimeUnit]
             A tuple containing the start time, end time, timestep, and time unit of the trajectory.
         """
-        return self.start_time, self.end_time, self.timestep, self.time_unit
+        return self.time_data
     
     @abstractmethod
     def get_temperature(self, index: int) -> float:

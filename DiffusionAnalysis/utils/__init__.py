@@ -1,2 +1,2 @@
-from .time_unit import TimeUnit
+from .time_utils import TimeUnit, TimeData
 from .atoms_map import AtomsMap
