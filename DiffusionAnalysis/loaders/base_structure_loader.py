@@ -1,7 +1,7 @@
 from DiffusionAnalysis.utils.time_unit import TimeUnit
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from ase.atoms import Atoms
-from typing import Optional, Iterator, Union, Tuple
+from typing import Optional, Iterator, Union, Tuple, List
 
 class StructureLoader(ABC):
     '''
@@ -24,6 +24,9 @@ class StructureLoader(ABC):
         is the starting step (inclusive), `stop` is the ending step (exclusive), and `step` is the step size.
         If an integer is provided, it represents a specific step to load.
         If `None`, all steps from the trajectory will be loaded.
+    md_temperature : temperature: Union[float, List[float]] = 300
+        default=300 k. A float or list of floats representing the temperature(s) of the MD simulation. If a list
+        is provided, the length should match the number of steps in the trajectory.
     md_timestep : Optional[float], default=1
         The time step of the MD simulation, representing the time difference between consecutive frames.
     md_time_unit : Union[str, TimeUnit], default='ps'
@@ -33,6 +36,9 @@ class StructureLoader(ABC):
     md_start_offset : Optional[float], default=None
         The starting time offset of the trajectory in the specified time unit. If `None`, the starting time
         will be determined based on the `structures_slice`.
+    atom_map : Optional[dict], default=None
+        A dictionary to change the atom types in the trajectory. The dictionary should have the format
+        `{old_atom_type: new_atom_type}`. If `None`, the atom types will not be changed.
 
     Attributes
     ----------
@@ -40,6 +46,8 @@ class StructureLoader(ABC):
         The path to the trajectory file.
     structures_slice : Optional[Union[slice, int]]
         The slice object or integer specifying the range or specific steps to load from the trajectory.
+    md_temperature : Union[float, List[float]]
+        The temperature of the MD simulation.
     timestep : float
         The time step of the MD simulation, adjusted based on the `structures_slice` and `md_timestep`.
     time_unit : TimeUnit
@@ -72,9 +80,12 @@ class StructureLoader(ABC):
     @abstractmethod
     def __init__(self, filepath: str, 
                 structures_slice: Optional[Union[slice, int]], 
-                md_timestep: Optional[float] = 1, 
+                md_temperature: Optional[Union[float, List[float]]] = None,
+                md_timestep: float = 1, 
                 md_time_unit: Union[str, TimeUnit] = 'ps', 
-                md_start_offset: Optional[float] = None):
+                md_start_offset: Optional[float] = None,
+                atom_map: Optional[dict] = None):
+
         '''
         Initializes the StructureLoader instance.
 
@@ -82,11 +93,13 @@ class StructureLoader(ABC):
         '''
         self.filepath = filepath
         self.structures_slice = structures_slice
-        self._total_steps = None
+        self.temperature = md_temperature
+        self._total_steps = 0
         self.timestep = md_timestep
         self.time_unit = TimeUnit(md_time_unit) if isinstance(md_time_unit, str) else md_time_unit
-        self.start_time = None
-        self.end_time = None
+        self.start_time = 0
+        self.end_time = 0
+        self.atom_map = atom_map 
 
         if self.structures_slice is None:
             start = 0
@@ -140,7 +153,7 @@ class StructureLoader(ABC):
         '''
         Returns True if the trajectory file contains lattice vectors.
         '''
-        pass
+        raise NotImplementedError("Subclasses must implement has_lattice_vectors")
 
     @abstractmethod
     def reset(self) -> None:
@@ -167,3 +180,10 @@ class StructureLoader(ABC):
             A tuple containing the start time, end time, timestep, and time unit of the trajectory.
         """
         return self.start_time, self.end_time, self.timestep, self.time_unit
+    
+    @abstractmethod
+    def get_temperature(self, index: int) -> float:
+        if isinstance(self.temperature, list):
+            return self.temperature[index]
+        else:
+            return self.temperature
