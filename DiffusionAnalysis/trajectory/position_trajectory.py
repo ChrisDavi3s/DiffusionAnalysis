@@ -2,7 +2,7 @@ import numpy as np
 from typing import Optional, Union, List, Tuple
 from ase import Atoms
 from DiffusionAnalysis.loaders import StructureLoader
-from DiffusionAnalysis.utils.time_unit import TimeUnit
+from DiffusionAnalysis.utils.time_utils import TimeUnit
 import itertools
 from tqdm import tqdm
 import itertools

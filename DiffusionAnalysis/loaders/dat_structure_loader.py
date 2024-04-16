@@ -2,7 +2,7 @@ from .base_structure_loader import StructureLoader
 from ase.io import read, iread
 from ase.atoms import Atoms
 from typing import Optional, Union, Iterator, Tuple, List
-from ..utils import TimeUnit
+from ..utils import TimeUnit, TimeData
 
 class DatStructureLoader(StructureLoader):
     '''
@@ -119,7 +119,7 @@ class DatStructureLoader(StructureLoader):
         return self._total_atoms
 
     @property
-    def get_trajectory_time_info(self) -> Tuple[float, float, float, TimeUnit]:
+    def get_trajectory_time_info(self) -> TimeData:
         """
         Returns a tuple containing the start time, end time, timestep, and time unit of the trajectory.
 

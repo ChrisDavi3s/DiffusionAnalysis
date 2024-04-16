@@ -2,7 +2,7 @@ from .base_structure_loader import StructureLoader
 from ase.io import read, iread
 from ase.atoms import Atoms
 from typing import Optional, Iterator, Tuple, Union, List
-from ..utils.time_unit import TimeUnit
+from ..utils.time_utils import TimeUnit, TimeData
 
 class XYZStructureLoader(StructureLoader):
     '''
@@ -38,7 +38,7 @@ class XYZStructureLoader(StructureLoader):
 
     def __init__(self, filepath: str, 
                  structures_slice: Optional[slice] = None,
-                md_temperature: Optional[Union[float, List[float]]] = None,
+                 md_temperature: Optional[Union[float, List[float]]] = None,
                  md_timestep: float = 1, 
                  md_time_unit: Union[str, TimeUnit] = 'ps',
                  md_start_offset: Optional[float] = None,
@@ -115,7 +115,7 @@ class XYZStructureLoader(StructureLoader):
         return self._total_atoms
 
     @property
-    def get_trajectory_time_info(self) -> Tuple[float, float, float, TimeUnit]:
+    def get_trajectory_time_info(self) -> TimeData:
         """
         Returns a tuple containing the start time, end time, timestep, and time unit of the trajectory.
 
@@ -124,7 +124,7 @@ class XYZStructureLoader(StructureLoader):
         Tuple[float, float, float, TimeUnit]
             A tuple containing the start time, end time, timestep, and time unit of the trajectory.
         """
-        return super().get_trajectory_time_info\
+        return super().get_trajectory_time_info
         
     def get_temperature(self, index: int) -> float:
         return super().get_temperature(index)
