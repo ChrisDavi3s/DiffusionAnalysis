@@ -132,8 +132,8 @@ class COMMSDAnalyser:
             plt.Figure: The matplotlib figure object.
         """
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (12, 8)))
-        timestep = self.displacement_trajectory.atoms_trajectory_loader.timestep
-        time_unit = self.displacement_trajectory.atoms_trajectory_loader.time_unit.value
+        timestep = self.displacement_trajectory.atoms_trajectory_loader.time_data.timestep
+        time_unit = self.displacement_trajectory.atoms_trajectory_loader._time_unit.value
 
         if isinstance(com_msd_data, tuple):
             for i, msd in enumerate(com_msd_data):
@@ -187,8 +187,8 @@ class COMMSDAnalyser:
         """
 
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (8, 6)))
-        timestep = self.displacement_trajectory.atoms_trajectory_loader.timestep
-        time_unit = self.displacement_trajectory.atoms_trajectory_loader.time_unit.value
+        timestep = self.displacement_trajectory.atoms_trajectory_loader.time_data.timestep
+        time_unit = self.displacement_trajectory.atoms_trajectory_loader._time_unit.value
 
         for time_lag in time_lags:
             bin_centers, hist = self.calculate_com_displacement_per_atom(tracer_specs, framework_specs, correct_drift,

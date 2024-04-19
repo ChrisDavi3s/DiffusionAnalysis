@@ -158,8 +158,8 @@ class VanHoveAnalyser:
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (8, 6)))
         
         for bin_centers, hist, tau, normalization_factor in data:
-            time_value = tau * self.displacement_trajectory.atoms_trajectory_loader.timestep
-            time_unit = self.displacement_trajectory.atoms_trajectory_loader.time_unit.value
+            time_value = tau * self.displacement_trajectory.atoms_trajectory_loader.time_data.timestep
+            time_unit = self.displacement_trajectory.atoms_trajectory_loader._time_unit.value
             label = kwargs.get('label', f'{mode.capitalize()} part, t = {time_value:.2f} {time_unit}')
             
             if include_normalization:

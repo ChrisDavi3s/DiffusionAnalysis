@@ -65,20 +65,17 @@ class TimeData:
                  time_unit: Union[str, TimeUnit] = 'ps',
                  start_offset: Optional[float] = None,
                  structures_slice: Optional[Union[slice, int]] = None,
-                 number_of_steps: Optional[int] = None
                  ):
         
-        self.timestep = timestep
-        self.time_unit = TimeUnit(time_unit) if isinstance(time_unit, str) else time_unit
-        self.number_of_steps = number_of_steps
+        self._timestep = timestep
+        self._time_unit = TimeUnit(time_unit) if isinstance(time_unit, str) else time_unit
 
         if structures_slice is None:
             self.start_offset = 0 if start_offset is None else start_offset
         elif isinstance(structures_slice, slice):
             self.start_offset = structures_slice.start if structures_slice.start is not None else 0
-            self.timestep *= structures_slice.step if structures_slice.step is not None else 1
-            self.timestep, self.time_unit = TimeUnit.adjust_timestep_and_unit(self.timestep, self.time_unit)
-            self.number_of_steps = structures_slice.stop - structures_slice.start if structures_slice.stop
+            self._timestep *= structures_slice.step if structures_slice.step is not None else 1
+            self._timestep, self._time_unit = TimeUnit.adjust_timestep_and_unit(self._timestep, self._time_unit)
         else:
             self.start_offset = structures_slice
 
@@ -90,16 +87,36 @@ class TimeData:
         Returns:
             float: The time factor to convert the timestep to the desired time unit.
         """
-        return self.time_unit.get_time_as_seconds()
+        return self._time_unit.get_time_as_seconds()
     
     @property
     def start_time(self) -> float:
         return self.start_offset
     
     @property
-    def end_time(self) -> float:
-        if self.number_of_steps is None:
-            raise ValueError("The number of steps is not defined.")
-        return self.start_offset + self.number_of_steps * self.timestep
+    def timestep(self) -> float:
+        return self._timestep
     
+    # So why is this not a property? We cant guarante a strucure loads correctly and so we cant guarantee the number of steps
+    def get_end_time(self, number_of_steps) -> float:
+        return self.start_offset + number_of_steps * self._timestep
     
+    def slice_time_data(self, structures_slice: Union[slice, int]):
+        """
+        Update the time data based on the provided slice.
+
+        Args:
+            structures_slice (Union[slice, int]): The slice object or integer representing the slicing of the structures.
+            total_steps (int): The total number of steps in the trajectory.
+
+        Returns:
+            None
+        """
+        if isinstance(structures_slice, slice):
+            self._timestep *= structures_slice.step if structures_slice.step is not None else 1
+            self.start_offset = self.start_offset + structures_slice.start
+            self._timestep, self.time_unit = TimeUnit.adjust_timestep_and_unit(self.timestep, self.time_unit)
+        elif isinstance(structures_slice, int):
+            self.start_offset = self.start_offset + structures_slice * self._timestep
+        else:
+            raise ValueError("structures_slice must be either a slice object or an integer.")

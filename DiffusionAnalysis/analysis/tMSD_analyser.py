@@ -87,7 +87,7 @@ class TMSDAnalyser:
             msd = np.mean(squared_displacements)
             tMSD_values.append(msd)
 
-        timestep = self.displacement_trajectory.atoms_trajectory_loader.timestep
+        timestep = self.displacement_trajectory.atoms_trajectory_loader.time_data.timestep
         time_lag_values = np.array(tau_values) * timestep
 
 
@@ -110,7 +110,7 @@ class TMSDAnalyser:
         '''
         fig, ax = plt.subplots(figsize=kwargs.get('figsize', (8, 6)))
         ax.loglog(time_lag_values, tMSD_values, label=label)
-        time_unit = self.displacement_trajectory.atoms_trajectory_loader.time_unit.value
+        time_unit = self.displacement_trajectory.atoms_trajectory_loader._time_unit.value
         ax.set_xlabel(kwargs.get('xlabel', f'Time lag ({time_unit})'))
         ax.set_ylabel(kwargs.get('ylabel', r'tMSD ($\AA^2$)'))
         ax.legend(loc=kwargs.get('legend_loc', 'best'))
@@ -159,7 +159,7 @@ class TMSDAnalyser:
             smoothed_exponents = exponents
 
         ax.semilogx(time_lag_values, smoothed_exponents, label=label)
-        time_unit = self.displacement_trajectory.atoms_trajectory_loader.time_unit.value
+        time_unit = self.displacement_trajectory.atoms_trajectory_loader._time_unit.value
         ax.set_xlabel(kwargs.get('xlabel', f'Time lag ({time_unit})'))
         ax.set_ylabel(kwargs.get('ylabel', r'Exponent of $\langle r^2(t)\rangle$'))
         ax.legend(loc=kwargs.get('legend_loc', 'best'))
