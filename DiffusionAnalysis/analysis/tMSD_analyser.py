@@ -5,7 +5,6 @@ from typing import Optional, Tuple, List, Union
 from tqdm import tqdm
 import math
 
-
 class TMSDAnalyser:
     '''
     Class for calculating and plotting the time-averaged mean squared displacement (tMSD).

@@ -1,3 +1,4 @@
-from .displacement_trajectory import DisplacementTrajectory
+from .displacement_trajectory_analyser import DisplacementTrajectoryAnalyser
 #from .time_unit import TimeUnit
 from .position_trajectory import PositionTrajectory
+from .displacement_trajectory import DisplacementTrajectory

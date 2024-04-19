@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from ..trajectory import DisplacementTrajectory
 from typing import Optional, Union, Tuple, List
 
+
 class TracerMSDAnalyser:
     def __init__(self, displacement_trajectory: DisplacementTrajectory):
         """

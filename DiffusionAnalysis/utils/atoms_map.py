@@ -145,3 +145,42 @@ class AtomsMap:
             List[str]: A list of atom strings.
         """
         return [f"{chemical_symbols[num]}{i}" for num, indices in self.atom_indices_map.items() for i in indices]
+    
+    def filter_atoms(self, tracer_specs: Optional[List[Union[int, str]]] = None,
+                     framework_specs: Optional[List[Union[int, str]]] = None) -> 'AtomsMap':
+        """
+        Filter the atom indices map based on the provided tracer and framework specs.
+
+        Args:
+            tracer_specs (List[Union[int, str]], optional): The indices or symbols of the tracer atoms.
+                                                            Defaults to None.
+            framework_specs (List[Union[int, str]], optional): The indices or symbols of the framework atoms.
+                                                            Defaults to None.
+
+        Returns:
+            AtomsMap: A new AtomsMap object with the filtered atom indices map.
+
+        Raises:
+            ValueError: If both tracer_specs and framework_specs are None.
+        """
+        if tracer_specs is None and framework_specs is None:
+            raise ValueError("At least one of tracer_specs or framework_specs must be provided.")
+
+        # Get the indices of the tracer and framework atoms
+        tracer_indices = self.get_indices(tracer_specs) if tracer_specs is not None else np.array([], dtype=int)
+        framework_indices = self.get_indices(framework_specs) if framework_specs is not None else np.array([], dtype=int)
+
+        # Create a new dictionary for the filtered atom indices map
+        filtered_atom_indices_map = {}
+
+        # Filter the atom indices map based on the tracer and framework indices
+        for atomic_number, indices in self.atom_indices_map.items():
+            mask = np.isin(indices, np.concatenate((tracer_indices, framework_indices)))
+            if np.any(mask):
+                filtered_atom_indices_map[atomic_number] = indices[mask]
+
+        # Create a new AtomsMap object with the filtered atom indices map
+        filtered_atoms_map = AtomsMap.__new__(AtomsMap)
+        filtered_atoms_map.atom_indices_map = filtered_atom_indices_map
+
+        return filtered_atoms_map

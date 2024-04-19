@@ -74,7 +74,6 @@ class COMTMSDAnalyser:
                     
             dr = com_positions[end_indices] - com_positions[start_indices]
 
-
             if use_3d:
                 msd = np.mean(np.sum(dr**2, axis=1))
             else:
