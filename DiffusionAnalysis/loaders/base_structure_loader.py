@@ -98,7 +98,7 @@ class StructureLoader(ABC):
         self._time_unit = TimeUnit(md_time_unit) if isinstance(md_time_unit, str) else md_time_unit
         self.atom_map = atom_map 
 
-        self.time_data = TimeData(md_timestep, md_time_unit, md_start_offset, structures_slice, number_of_steps=self._total_steps)
+        self.time_data = TimeData(md_timestep, md_time_unit, md_start_offset, structures_slice)
 
     @abstractmethod
     def __iter__(self) -> Iterator[Atoms]:
