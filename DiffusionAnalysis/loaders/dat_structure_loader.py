@@ -81,7 +81,8 @@ class DatStructureLoader(StructureLoader):
         elif isinstance(self.structures_slice, int):
             total = 1
 
-        return total
+        #dat files are 1-indexed, so we need to subtract 1
+        return total - 1
 
     # TODO A dat file already has this information in the header (I think?), so we can just read it from there
     def get_total_steps(self) -> int:
