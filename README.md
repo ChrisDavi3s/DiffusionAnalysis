@@ -2,6 +2,8 @@
 
 DiffusionAnalysis is a Python package for analyzing diffusion properties from molecular dynamics (MD) trajectories. It offers a suite of tools to calculate and visualize various quantities that characterize diffusive behavior, including mean squared displacements (MSD), van Hove correlation functions, and time-dependent mean squared displacements (tMSD).
 
+:)
+
 ###TODO
 VAC's .. COM VAC's ... watch this space!
 
