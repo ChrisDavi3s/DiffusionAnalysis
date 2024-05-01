@@ -112,16 +112,16 @@ class DatStructureLoader(StructureLoader):
         self._total_atoms = None
 
     def get_number_of_atoms(self) -> int:
-            ‘’'
-            Read the first step to get the number of atoms.
-            ‘’'
-            if self._total_atoms is None:
-                with open(self.filepath, ‘r’) as file:
-                    for i in range(3):
-                        file.readline()
-                    first_line = file.readline().strip()
-                    self._total_atoms = int(first_line)
-            return self._total_atoms
+        ‘’'
+        Read the first step to get the number of atoms.
+        ‘’'
+        if self._total_atoms is None:
+            with open(self.filepath, ‘r’) as file:
+                for i in range(3):
+                    file.readline()
+                first_line = file.readline().strip()
+                self._total_atoms = int(first_line)
+        return self._total_atoms
         
     @property
     def get_trajectory_time_info(self) -> TimeData:
