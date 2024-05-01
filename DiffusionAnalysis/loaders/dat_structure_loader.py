@@ -112,9 +112,9 @@ class DatStructureLoader(StructureLoader):
         self._total_atoms = None
 
     def get_number_of_atoms(self) -> int:
-        ‘’'
+        '''
         Read the first step to get the number of atoms.
-        ‘’'
+        '''
         if self._total_atoms is None:
             with open(self.filepath, ‘r’) as file:
                 for i in range(3):
