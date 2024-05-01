@@ -48,7 +48,7 @@ class DatStructureLoader(StructureLoader):
         super().__init__(filepath, structures_slice, md_temperature ,md_timestep, md_time_unit, md_start_offset, atom_map)
         self._total_steps = None
         self._total_atoms = None 
-        self._iterator = iter(iread(self.filepath, index=self.structures_slice))
+        self._iterator = iread(self.filepath, index=self.structures_slice)
 
     def __iter__(self) -> Iterator[Atoms]:
         return self
@@ -107,18 +107,22 @@ class DatStructureLoader(StructureLoader):
         '''
         Reset the iterator to the first step.
         '''
-        self._iterator = iter(iread(self.filepath, index=self.structures_slice))
+        self._iterator = iread(self.filepath, index=self.structures_slice)
         self._total_steps = None
         self._total_atoms = None
 
     def get_number_of_atoms(self) -> int:
-        '''
-        Read the first step to get the number of atoms. SLOW!
-        '''
-        if self._total_atoms is None:
-            self._total_atoms = len(read(self.filepath, index=0))
-        return self._total_atoms
-
+            ‘’'
+            Read the first step to get the number of atoms.
+            ‘’'
+            if self._total_atoms is None:
+                with open(self.filepath, ‘r’) as file:
+                    for i in range(3):
+                        file.readline()
+                    first_line = file.readline().strip()
+                    self._total_atoms = int(first_line)
+            return self._total_atoms
+        
     @property
     def get_trajectory_time_info(self) -> TimeData:
         """
